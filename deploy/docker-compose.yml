@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  db:
+    image: postgres:15-alpine
+    container_name: dasshine-db
+    environment:
+      POSTGRES_USER: dasshine
+      POSTGRES_PASSWORD: dasshine123
+      POSTGRES_DB: dasshine_label
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dasshine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: dasshine-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 后端服务
+  backend:
+    build: ./backend
+    container_name: dasshine-backend
+    environment:
+      - DATABASE_URL=postgresql://dasshine:dasshine123@db:5432/dasshine_label
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DEBUG=true
+      - APP_NAME=Dasshine Label
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      sh -c "
+        cd /app &&
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Celery任务队列（可选）
+  celery:
+    build: ./backend
+    container_name: dasshine-celery
+    environment:
+      - DATABASE_URL=postgresql://dasshine:dasshine123@db:5432/dasshine_label
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+    command: celery -A app.celery_app worker --loglevel=info
+
+  # 前端开发服务器（可选，生产环境用Nginx）
+  frontend:
+    image: node:18-alpine
+    container_name: dasshine-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "
+        npm install &&
+        npm run dev -- --host
+      "
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:
+  redis_data:
