@@ -155,6 +155,41 @@ export const annotationApi = {
     api.get(`/users/${userId}/annotations`, { params }),
 }
 
+// 3D标注相关 API
+export const annotations3DApi = {
+  // 创建3D边界框
+  createCuboid: (taskId: number, dataId: string, cuboid: any, frameId?: number, trackId?: string) =>
+    api.post('/annotations/3d/cuboid', cuboid, { params: { task_id: taskId, data_id: dataId, frame_id: frameId, track_id: trackId } }),
+
+  // 创建3D关键点
+  createPoint: (taskId: number, dataId: string, point: any, frameId?: number) =>
+    api.post('/annotations/3d/point', point, { params: { task_id: taskId, data_id: dataId, frame_id: frameId } }),
+
+  // 获取任务的3D标注
+  getByTask: (taskId: number, params?: { data_id?: string; frame_id?: number; annotation_type?: string }) =>
+    api.get(`/annotations/3d/task/${taskId}`, { params }),
+
+  // 更新3D标注
+  update: (annotationId: string, updates: any) =>
+    api.put(`/annotations/3d/${annotationId}`, updates),
+
+  // 删除3D标注
+  delete: (annotationId: string) =>
+    api.delete(`/annotations/3d/${annotationId}`),
+
+  // 批量创建
+  batchCreate: (data: { task_id: number; data_id: string; annotations: any[] }) =>
+    api.post('/annotations/3d/batch', data),
+
+  // 获取统计
+  getStats: (taskId: number) =>
+    api.get(`/annotations/3d/task/${taskId}/stats`),
+
+  // 导出
+  export: (taskId: number, format: 'kitti' | 'json' | 'csv', includeMetadata?: boolean) =>
+    api.post(`/annotations/3d/task/${taskId}/export`, { format, include_metadata: includeMetadata }),
+}
+
 // 导出相关 API
 export const exportApi = {
   // 导出项目数据

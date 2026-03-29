@@ -20,7 +20,10 @@
     "dayjs": "^1.11.0",
     "lodash-es": "^4.17.21",
     "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.294.0"
+    "lucide-react": "^0.294.0",
+    "three": "^0.160.0",
+    "@react-three/fiber": "^8.15.0",
+    "@react-three/drei": "^9.92.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

@@ -8,7 +8,8 @@ import {
   Menu,
   X,
   Zap,
-  User
+  User,
+  Box
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
 import { authApi } from '../services/api'

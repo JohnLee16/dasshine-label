@@ -8,6 +8,8 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import TaskList from './pages/TaskList'
 import AnnotationWorkspace from './pages/AnnotationWorkspace'
+import ImageAnnotation from './pages/ImageAnnotation'
+import PointCloudAnnotation from './pages/PointCloudAnnotation'
 import Projects from './pages/Projects'
 import './index.css'
 
@@ -47,6 +49,8 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="tasks" element={<TaskList />} />
           <Route path="annotate/:taskId" element={<AnnotationWorkspace />} />
+          <Route path="annotate-image/:taskId" element={<ImageAnnotation />} />
+          <Route path="annotate-3d/:taskId" element={<PointCloudAnnotation />} />
         </Route>
       </Routes>
     </>
