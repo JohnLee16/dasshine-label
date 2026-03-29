@@ -24,7 +24,7 @@ class TaskCreate(BaseModel):
     project_id: int
     data: dict = Field(..., description="任务数据")
     data_url: Optional[str] = Field(None, description="数据文件URL")
-    metadata: Optional[dict] = Field(None, description="元数据")
+    task_metadata: Optional[dict] = Field(None, description="元数据")
     priority: int = Field(default=5, ge=1, le=10)
 
 

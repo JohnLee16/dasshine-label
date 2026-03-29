@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -10,12 +10,28 @@ import {
   Zap,
   User
 } from 'lucide-react'
+import { useAuthStore } from '../store/auth'
+import { authApi } from '../services/api'
 
 const Layout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout, setUser } = useAuthStore()
+
+  // 获取当前用户信息
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await authApi.getMe()
+        setUser(response.data)
+      } catch (error) {
+        // Token 无效，会被拦截器处理
+      }
+    }
+    fetchUser()
+  }, [setUser])
 
   const menuItems = [
     { key: '/', icon: LayoutDashboard, label: '工作台' },
@@ -24,8 +40,30 @@ const Layout: React.FC = () => {
   ]
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
+    logout()
     navigate('/login')
+  }
+
+  const getRoleLabel = (role?: string) => {
+    const labels: Record<string, string> = {
+      'super_admin': '超级管理员',
+      'admin': '管理员',
+      'manager': '项目经理',
+      'annotator': '标注员',
+      'reviewer': '审核员',
+    }
+    return labels[role || ''] || '用户'
+  }
+
+  const getLevelLabel = (level?: string) => {
+    const labels: Record<string, string> = {
+      'novice': '新手',
+      'junior': '初级',
+      'intermediate': '中级',
+      'senior': '高级',
+      'expert': '专家',
+    }
+    return labels[level || ''] || level
   }
 
   return (
@@ -90,8 +128,8 @@ const Layout: React.FC = () => {
                 <User className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">标注员_001</div>
-                <div className="text-xs text-ds-primary">中级标注员</div>
+                <div className="text-sm font-medium text-white truncate">{user?.username || '用户'}</div>
+                <div className="text-xs text-ds-primary">{getLevelLabel(user?.level) || getRoleLabel(user?.role)}</div>
               </div>
             </div>
           )}

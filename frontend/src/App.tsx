@@ -2,7 +2,9 @@ import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
+import { AuthGuard, GuestGuard } from './components/AuthGuard'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import TaskList from './pages/TaskList'
 import AnnotationWorkspace from './pages/AnnotationWorkspace'
@@ -23,8 +25,24 @@ function App() {
         }}
       />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Layout />}>
+        {/* 公开路由 */}
+        <Route path="/login" element={
+          <GuestGuard>
+            <Login />
+          </GuestGuard>
+        } />
+        <Route path="/register" element={
+          <GuestGuard>
+            <Register />
+          </GuestGuard>
+        } />
+
+        {/* 受保护路由 */}
+        <Route path="/" element={
+          <AuthGuard>
+            <Layout />
+          </AuthGuard>
+        }>
           <Route index element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
           <Route path="tasks" element={<TaskList />} />

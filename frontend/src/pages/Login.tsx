@@ -1,21 +1,27 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Button, Input, Form, message } from 'antd'
 import { Zap, Eye, EyeOff, Lock, User } from 'lucide-react'
+import { authApi } from '../services/api'
+import { useAuthStore } from '../store/auth'
 
 const Login: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
+  const login = useAuthStore((state) => state.login)
 
   const onFinish = async (values: { username: string; password: string }) => {
     setLoading(true)
     try {
-      // TODO: 调用实际登录API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      localStorage.setItem('token', 'mock-token')
+      const response = await authApi.login(values.username, values.password)
+      
+      login(response.data.user, response.data.access_token)
       message.success('登录成功')
       navigate('/')
+    } catch (error: any) {
+      const msg = error.response?.data?.detail || '登录失败，请检查用户名和密码'
+      message.error(msg)
     } finally {
       setLoading(false)
     }
@@ -57,7 +63,7 @@ const Login: React.FC = () => {
             >
               <Input
                 prefix={<User className="w-5 h-5 text-ds-text-muted" />}
-                placeholder="用户名"
+                placeholder="用户名或邮箱"
                 size="large"
                 className="bg-ds-dark border-ds-border hover:border-ds-primary focus:border-ds-primary"
               />
@@ -101,9 +107,9 @@ const Login: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-ds-text-muted">
               还没有账号？
-              <a href="#" className="text-ds-primary hover:text-ds-secondary transition-colors">
+              <Link to="/register" className="text-ds-primary hover:text-ds-secondary transition-colors">
                 立即注册
-              </a>
+              </Link>
             </p>
           </div>
         </div>
@@ -112,9 +118,9 @@ const Login: React.FC = () => {
         <div className="mt-8 text-center text-xs text-ds-text-muted">
           <p>© 2026 Dasshine Label. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-2">
-            <a href="#" className="hover:text-ds-primary">隐私政策</a>
-            <a href="#" className="hover:text-ds-primary">服务条款</a>
-            <a href="#" className="hover:text-ds-primary">帮助中心</a>
+            <Link to="#" className="hover:text-ds-primary">隐私政策</Link>
+            <Link to="#" className="hover:text-ds-primary">服务条款</Link>
+            <Link to="#" className="hover:text-ds-primary">帮助中心</Link>
           </div>
         </div>
       </div>
