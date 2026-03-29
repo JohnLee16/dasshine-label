@@ -47,7 +47,7 @@ class TaskDispatchRequest(BaseModel):
     """任务分发请求"""
     project_id: int
     batch_size: int = Field(default=100, ge=1, le=500)
-    strategy: str = Field(default="smart", regex="^(smart|random|round_robin)$")
+    strategy: str = Field(default="smart", pattern="^(smart|random|round_robin)$")
 
 
 class TaskDispatchResponse(BaseModel):
@@ -70,7 +70,7 @@ class TaskSubmitRequest(BaseModel):
 
 class TaskReviewRequest(BaseModel):
     """审核任务请求"""
-    decision: str = Field(..., regex="^(approved|rejected)$")
+    decision: str = Field(..., pattern="^(approved|rejected)$")
     feedback: Optional[str] = None
     score: Optional[float] = Field(None, ge=0, le=100)
 
