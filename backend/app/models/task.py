@@ -50,7 +50,7 @@ class Task(Base, TimestampMixin):
     data_url: Mapped[Optional[str]] = mapped_column(String(500))  # 文件URL（图片/音频/视频）
     
     # 元数据
-    metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)  # 额外元数据
+    extra_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)  # 额外元数据
     
     # 状态和优先级
     status: Mapped[TaskStatus] = mapped_column(SQLEnum(TaskStatus), default=TaskStatus.PENDING)
