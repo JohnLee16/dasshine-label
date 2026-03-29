@@ -642,8 +642,7 @@ const ImageAnnotation: React.FC = () => {
             </button>
           </Tooltip>
           
-          <Tooltip title="关键点 (K)" placement="right"
-003e
+          <Tooltip title="关键点 (K)" placement="right">
             <button
               onClick={() => setSelectedTool('point')}
               disabled={!availableTools.includes('point')}
@@ -814,7 +813,7 @@ const ImageAnnotation: React.FC = () => {
                           />
                         </svg>
                         {/* 顶点 */}
-                        {anno.coordinates.map((c, i) => i % 2 === 0 &> {
+                        {anno.coordinates.map((c, i) => i % 2 === 0 && (() => {
                           const x = anno.coordinates[i]
                           const y = anno.coordinates[i + 1]
                           return (
@@ -836,7 +835,7 @@ const ImageAnnotation: React.FC = () => {
                               }}
                             />
                           )
-                        })}
+                        })())}
                         {/* 标签 */}
                         {showLabels && anno.coordinates.length >= 2 && (
                           <span 
@@ -925,7 +924,7 @@ const ImageAnnotation: React.FC = () => {
                 
                 
                 {/* 正在绘制的多边形 */}
-                {isDrawingPolygon && polygonPoints.length > 0 &> (
+                {isDrawingPolygon && polygonPoints.length > 0 && (
                   <div className="absolute inset-0 pointer-events-none">
                     <svg className="absolute inset-0 w-full h-full overflow-visible">
                       <polyline

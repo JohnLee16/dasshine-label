@@ -510,8 +510,7 @@ const PointCloudAnnotation: React.FC = () => {
           <Tooltip title="撤销">
             <Button icon={<Undo2 className="w-4 h-4" />} className="bg-ds-dark border-ds-border" />
           </Tooltip>
-          <Tooltip title="重做"
-003e
+          <Tooltip title="重做">
             <Button icon={<Redo2 className="w-4 h-4" />} className="bg-ds-dark border-ds-border" />
           </Tooltip>
           <div className="h-6 w-px bg-ds-border" />
@@ -664,8 +663,7 @@ const PointCloudAnnotation: React.FC = () => {
           </div>
           
           {/* 操作提示 */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-ds-card/90 backdrop-blur px-4 py-2 rounded-lg border border-ds-border text-sm text-ds-text"
-003e
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-ds-card/90 backdrop-blur px-4 py-2 rounded-lg border border-ds-border text-sm text-ds-text">
             {selectedTool === 'cuboid' && '点击点云放置3D框'}
             {selectedTool === 'point' && '点击放置关键点'}
             {selectedTool === 'select' && '点击选择，拖拽旋转视图'}
@@ -674,8 +672,7 @@ const PointCloudAnnotation: React.FC = () => {
         </div>
 
         {/* 右侧面板 */}
-        <aside className="w-80 bg-ds-card border-l border-ds-border flex flex-col shrink-0"
-003e
+        <aside className="w-80 bg-ds-card border-l border-ds-border flex flex-col shrink-0">
           {/* 标签选择 */}
           <div className="p-4 border-b border-ds-border">
             <h3 className="text-sm font-medium text-white mb-3">标签选择</h3>

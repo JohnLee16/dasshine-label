@@ -1,4 +1,4 @@
-import axios from './axios'
+import axios from 'axios'
 import type { 
   Cuboid3D, 
   Point3D, 
