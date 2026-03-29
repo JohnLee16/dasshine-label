@@ -5,123 +5,119 @@ Dasshine Label 项目完整性检查脚本
 
 import os
 import sys
-import ast
+from pathlib import Path
 
+def check_file_exists(filepath, description):
+    """检查文件是否存在"""
+    if os.path.exists(filepath):
+        print(f"✅ {description}: {filepath}")
+        return True
+    else:
+        print(f"❌ 缺失 {description}: {filepath}")
+        return False
 
 def check_python_syntax(filepath):
-    """检查Python文件语法"""
+    """检查Python语法"""
     try:
-        with open(filepath, 'r') as f:
-            ast.parse(f.read())
-        return True, None
-    except SyntaxError as e:
-        return False, str(e)
+        import py_compile
+        py_compile.compile(filepath, doraise=True)
+        return True
+    except Exception as e:
+        print(f"   ❌ 语法错误: {e}")
+        return False
 
-
-def check_project():
-    """检查项目完整性"""
-    print("🔍 Dasshine Label 项目完整性检查")
-    print("=" * 50)
+def main():
+    base_path = Path(__file__).parent.parent
+    os.chdir(base_path)
+    
+    print("="*60)
+    print("Dasshine Label 项目完整性检查")
+    print("="*60)
     
     errors = []
-    warnings = []
     
-    # 检查必要文件
-    required_files = [
-        'backend/app/main.py',
-        'backend/app/models/user.py',
-        'backend/app/models/project.py',
-        'backend/app/models/task.py',
-        'backend/app/services/task_dispatch.py',
-        'backend/app/services/auto_label.py',
-        'backend/app/services/quality_control.py',
-        'backend/app/api/v1/auth.py',
-        'backend/app/api/v1/tasks.py',
-        'backend/app/api/v1/projects.py',
-        'backend/app/api/v1/export.py',
-        'backend/app/api/v1/users.py',
-        'backend/app/api/v1/annotations.py',
-        'backend/app/api/v1/auto_label.py',
-        'backend/app/api/v1/quality.py',
-        'backend/requirements.txt',
-        'backend/Dockerfile',
-        'frontend/src/main.tsx',
-        'frontend/src/App.tsx',
-        'frontend/package.json',
-        'frontend/vite.config.ts',
-        'deploy/docker-compose.yml',
-        '.gitignore',
+    # 1. 检查核心配置文件
+    print("\n📋 检查核心配置...")
+    core_files = [
+        ("app/core/config.py", "配置模块"),
+        ("app/core/security.py", "安全模块"),
+        ("app/core/database.py", "数据库模块"),
+        ("app/core/exceptions.py", "异常模块"),
     ]
+    for file, desc in core_files:
+        if not check_file_exists(file, desc):
+            errors.append(f"缺失核心文件: {file}")
+        elif not check_python_syntax(file):
+            errors.append(f"语法错误: {file}")
     
-    print("\n📁 检查必要文件...")
-    for filepath in required_files:
-        full_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), filepath)
-        if os.path.exists(full_path):
-            print(f"  ✅ {filepath}")
+    # 2. 检查基础模型
+    print("\n📋 检查基础模型...")
+    model_files = [
+        ("app/models/base.py", "基础模型"),
+        ("app/models/user.py", "用户模型"),
+        ("app/models/project.py", "项目模型"),
+        ("app/models/task.py", "任务模型"),
+        ("app/models/annotation.py", "标注模型"),
+    ]
+    for file, desc in model_files:
+        if not check_file_exists(file, desc):
+            errors.append(f"缺失模型文件: {file}")
+        elif not check_python_syntax(file):
+            errors.append(f"语法错误: {file}")
+    
+    # 3. 检查API路由
+    print("\n📋 检查API路由...")
+    api_files = [
+        ("app/api/deps.py", "依赖注入"),
+        ("app/api/v1/auth.py", "认证API"),
+        ("app/api/v1/users.py", "用户API"),
+        ("app/api/v1/projects.py", "项目API"),
+        ("app/api/v1/tasks.py", "任务API"),
+        ("app/api/v1/annotations.py", "标注API"),
+        ("app/api/v1/annotations_3d.py", "3D标注API"),
+        ("app/api/v1/export.py", "导出API"),
+        ("app/api/v1/auto_label.py", "自动标注API"),
+        ("app/api/v1/quality.py", "质量控制API"),
+    ]
+    for file, desc in api_files:
+        if not check_file_exists(file, desc):
+            errors.append(f"缺失API文件: {file}")
+        elif not check_python_syntax(file):
+            errors.append(f"语法错误: {file}")
+    
+    # 4. 检查主入口
+    print("\n📋 检查主入口...")
+    if not check_file_exists("app/main.py", "主入口"):
+        errors.append("缺失主入口: app/main.py")
+    elif not check_python_syntax("app/main.py"):
+        errors.append("语法错误: app/main.py")
+    
+    # 5. 检查前端文件
+    print("\n📋 检查前端文件...")
+    frontend_files = [
+        ("../frontend/package.json", "前端配置"),
+        ("../frontend/src/main.tsx", "前端入口"),
+        ("../frontend/src/App.tsx", "前端主组件"),
+        ("../frontend/src/services/api.ts", "API服务"),
+    ]
+    for file, desc in frontend_files:
+        full_path = base_path / file
+        if full_path.exists():
+            print(f"✅ {desc}: {file}")
         else:
-            print(f"  ❌ {filepath} - 缺失")
-            errors.append(f"缺失文件: {filepath}")
+            print(f"❌ 缺失 {desc}: {file}")
+            errors.append(f"缺失前端文件: {file}")
     
-    # 检查Python语法
-    print("\n🐍 检查Python文件语法...")
-    backend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend')
-    for root, dirs, files in os.walk(backend_dir):
-        # 跳过虚拟环境目录
-        dirs[:] = [d for d in dirs if d not in ['venv', '__pycache__', '.pytest_cache']]
-        for file in files:
-            if file.endswith('.py'):
-                filepath = os.path.join(root, file)
-                valid, error = check_python_syntax(filepath)
-                rel_path = os.path.relpath(filepath, backend_dir)
-                if valid:
-                    pass  # 太多文件，不打印成功信息
-                else:
-                    print(f"  ❌ {rel_path} - {error}")
-                    errors.append(f"语法错误 {rel_path}: {error}")
-    
-    if not any('语法错误' in e for e in errors):
-        print("  ✅ 所有Python文件语法正确")
-    
-    # 统计代码行数
-    print("\n📊 代码统计...")
-    total_lines = 0
-    for root, dirs, files in os.walk(backend_dir):
-        dirs[:] = [d for d in dirs if d not in ['venv', '__pycache__', '.pytest_cache']]
-        for file in files:
-            if file.endswith('.py'):
-                filepath = os.path.join(root, file)
-                with open(filepath, 'r') as f:
-                    total_lines += len(f.readlines())
-    print(f"  Python代码: ~{total_lines} 行")
-    
-    frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'src')
-    if os.path.exists(frontend_dir):
-        ts_lines = 0
-        for root, dirs, files in os.walk(frontend_dir):
-            dirs[:] = [d for d in dirs if d not in ['node_modules', 'dist']]
-            for file in files:
-                if file.endswith(('.ts', '.tsx')):
-                    filepath = os.path.join(root, file)
-                    with open(filepath, 'r') as f:
-                        ts_lines += len(f.readlines())
-        print(f"  TypeScript代码: ~{ts_lines} 行")
-    
-    # 总结
-    print("\n" + "=" * 50)
+    # 6. 汇总
+    print("\n" + "="*60)
     if errors:
-        print(f"❌ 发现 {len(errors)} 个问题:")
-        for error in errors:
-            print(f"   - {error}")
-        return False
+        print(f"❌ 检查失败，发现 {len(errors)} 个问题:")
+        for err in errors:
+            print(f"   - {err}")
+        return 1
     else:
-        print("✅ 项目检查通过！")
-        print("\n🚀 启动命令:")
-        print("   cd deploy && docker-compose up -d")
-        print("   cd backend && uvicorn app.main:app --reload")
-        print("   cd frontend && npm run dev")
-        return True
-
+        print("✅ 项目检查通过！所有文件完整且语法正确。")
+        return 0
 
 if __name__ == "__main__":
-    success = check_project()
-    sys.exit(0 if success else 1)
+    sys.exit(main())

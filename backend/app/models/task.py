@@ -1,5 +1,5 @@
 """
-任务与标注模型
+任务模型
 """
 
 import enum
@@ -12,6 +12,7 @@ from app.models.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.project import Project
+    from app.models.annotation import Annotation
 
 
 class TaskStatus(str, enum.Enum):
@@ -77,44 +78,12 @@ class Task(Base, TimestampMixin):
     is_golden: Mapped[bool] = mapped_column(Boolean, default=False)
     golden_answer: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)  # 标准答案
     
-    # 关系
+    # 关系 - 引用外部Annotation模型
     annotations: Mapped[List["Annotation"]] = relationship("Annotation", back_populates="task")
     reviews: Mapped[List["Review"]] = relationship("Review", back_populates="task")
     
     def __repr__(self) -> str:
         return f"<Task {self.id} ({self.status})>"
-
-
-class Annotation(Base, TimestampMixin):
-    """标注结果表"""
-    __tablename__ = "annotations"
-    
-    id: Mapped[int] = mapped_column(primary_key=True)
-    
-    # 关联
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))
-    task: Mapped["Task"] = relationship("Task", back_populates="annotations")
-    
-    annotator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    annotator: Mapped["User"] = relationship("User", back_populates="annotations")
-    
-    # 标注结果
-    result: Mapped[Dict[str, Any]] = mapped_column(JSON)  # 标注数据
-    
-    # 版本
-    version: Mapped[int] = mapped_column(Integer, default=1)  # 版本号（修改后递增）
-    
-    # 时间
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    work_time: Mapped[int] = mapped_column(Integer)  # 工作时长（秒）
-    
-    # 状态
-    is_final: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否为最终结果
-    is_discarded: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否废弃
-    
-    def __repr__(self) -> str:
-        return f"<Annotation {self.id} by {self.annotator_id}>"
 
 
 class Review(Base, TimestampMixin):

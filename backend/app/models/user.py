@@ -11,7 +11,8 @@ from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.project import Project, ProjectMember
-    from app.models.task import Task, Annotation
+    from app.models.task import Task
+    from app.models.annotation import Annotation
 
 
 class UserRole(str, enum.Enum):

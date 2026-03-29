@@ -7,8 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.annotation import Annotation, AnnotationType
 import json
@@ -90,7 +89,7 @@ class Annotation3DResponse(BaseModel):
     data: dict
     frame_id: Optional[int]
     track_id: Optional[str]
-    created_by: int
+    annotator_id: int
     created_at: datetime
     updated_at: datetime
 
@@ -147,7 +146,7 @@ async def create_cuboid_annotation(
         },
         frame_id=frame_id,
         track_id=track_id,
-        created_by=current_user.id,
+        annotator_id=current_user.id,
         status="completed"
     )
     
@@ -163,7 +162,7 @@ async def create_cuboid_annotation(
         data=db_annotation.data,
         frame_id=db_annotation.frame_id,
         track_id=db_annotation.track_id,
-        created_by=db_annotation.created_by,
+        annotator_id=db_annotation.annotator_id,
         created_at=db_annotation.created_at,
         updated_at=db_annotation.updated_at,
     )
@@ -191,7 +190,7 @@ async def create_point3d_annotation(
             "visibility": annotation.visibility,
         },
         frame_id=frame_id,
-        created_by=current_user.id,
+        annotator_id=current_user.id,
         status="completed"
     )
     
@@ -207,7 +206,7 @@ async def create_point3d_annotation(
         data=db_annotation.data,
         frame_id=db_annotation.frame_id,
         track_id=db_annotation.track_id,
-        created_by=db_annotation.created_by,
+        annotator_id=db_annotation.annotator_id,
         created_at=db_annotation.created_at,
         updated_at=db_annotation.updated_at,
     )
@@ -247,7 +246,7 @@ async def get_task_3d_annotations(
                 data=data,
                 frame_id=anno.frame_id,
                 track_id=anno.track_id,
-                created_by=anno.created_by,
+                annotator_id=anno.annotator_id,
                 created_at=anno.created_at,
                 updated_at=anno.updated_at,
             ))
@@ -286,7 +285,7 @@ async def update_3d_annotation(
         data=annotation.data,
         frame_id=annotation.frame_id,
         track_id=annotation.track_id,
-        created_by=annotation.created_by,
+        annotator_id=annotation.annotator_id,
         created_at=annotation.created_at,
         updated_at=annotation.updated_at,
     )
@@ -327,7 +326,7 @@ async def batch_create_3d_annotations(
             data=anno_data.data,
             frame_id=anno_data.frame_id,
             track_id=anno_data.track_id,
-            created_by=current_user.id,
+            annotator_id=current_user.id,
             status="completed"
         )
         db.add(db_anno)
@@ -344,7 +343,7 @@ async def batch_create_3d_annotations(
             data=anno.data,
             frame_id=anno.frame_id,
             track_id=anno.track_id,
-            created_by=anno.created_by,
+            annotator_id=anno.annotator_id,
             created_at=anno.created_at,
             updated_at=anno.updated_at,
         )
