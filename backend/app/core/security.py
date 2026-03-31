@@ -5,21 +5,32 @@
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
+import hashlib
 from app.core.config import settings
-
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    # 将哈希字符串转换为字节
+    if isinstance(hashed_password, str):
+        hashed_password = hashed_password.encode('utf-8')
+    # 直接使用 bcrypt 验证
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """获取密码哈希"""
-    return pwd_context.hash(password)
+    """获取密码哈希
+    
+    bcrypt 有 72 字节限制，我们先对密码做 SHA256 处理，
+    这样无论多长的密码都能适配
+    """
+    # 使用 SHA256 预处理密码，确保长度固定且不超过 72 字节
+    password_bytes = password.encode('utf-8')
+    # 生成 bcrypt salt 并哈希
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

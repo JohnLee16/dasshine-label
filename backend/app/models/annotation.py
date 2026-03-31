@@ -87,7 +87,7 @@ class Annotation(Base, TimestampMixin):
     
     # 创建者
     annotator_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    annotator: Mapped["User"] = relationship("User", back_populates="annotations")
+    annotator: Mapped["User"] = relationship("User", back_populates="annotations", foreign_keys=[annotator_id])
     
     # 版本控制
     version: Mapped[int] = mapped_column(Integer, default=1)

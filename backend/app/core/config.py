@@ -1,7 +1,7 @@
 """
 Dasshine Label - 核心配置模块
 """
-
+import os
 from typing import List, Optional, Union
 from pydantic import PostgresDsn, RedisDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -27,7 +27,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
     
     # 数据库
-    DATABASE_URL: PostgresDsn = "postgresql://postgres:postgres@localhost:5432/dasshine_label"
+    # DATABASE_URL: PostgresDsn = "postgresql://postgres:postgres@localhost:5432/dasshine_label"
+    DATABASE_URL: str = f"postgresql://{os.getenv('USER', 'lijianxiong')}@localhost:5432/dasshine_label"
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 10
     

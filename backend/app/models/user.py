@@ -6,7 +6,7 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import String, Boolean, DateTime, Text, ForeignKey, Enum as SQLEnum, Table, Column
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
@@ -74,7 +74,11 @@ class User(Base, TimestampMixin):
     
     # 关系
     projects: Mapped[List["ProjectMember"]] = relationship("ProjectMember", back_populates="user")
-    annotations: Mapped[List["Annotation"]] = relationship("Annotation", back_populates="annotator")
+    annotations: Mapped[List["Annotation"]] = relationship(
+        "Annotation", 
+        back_populates="annotator",
+        foreign_keys="Annotation.annotator_id"
+    )
     assigned_tasks: Mapped[List["Task"]] = relationship("Task", back_populates="assignee")
     
     def __repr__(self) -> str:
