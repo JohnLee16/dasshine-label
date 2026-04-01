@@ -1,29 +1,27 @@
-import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../store/auth'
+import useAuthStore from '../store/authStore'
 
-interface AuthGuardProps {
+interface GuardProps {
   children: React.ReactNode
 }
 
-export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
+/** Redirect to /login if not authenticated */
+export function AuthGuard({ children }: GuardProps) {
   const { isAuthenticated } = useAuthStore()
   const location = useLocation()
 
   if (!isAuthenticated) {
-    // 保存当前路径，登录后可以跳转回来
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-
   return <>{children}</>
 }
 
-export const GuestGuard: React.FC<AuthGuardProps> = ({ children }) => {
+/** Redirect to / if already authenticated */
+export function GuestGuard({ children }: GuardProps) {
   const { isAuthenticated } = useAuthStore()
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />
   }
-
   return <>{children}</>
 }

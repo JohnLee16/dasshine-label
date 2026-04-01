@@ -1,228 +1,123 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Tag, Button, Badge, Progress, Space, Dropdown } from 'antd'
-import { 
-  Play, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle,
-  MoreVertical,
-  Filter,
-  ArrowRight
-} from 'lucide-react'
+import useAuthStore from '../store/authStore'
 
-interface Task {
-  id: number
-  projectName: string
-  type: string
-  priority: 'high' | 'normal' | 'low'
-  status: 'pending' | 'assigned' | 'in_progress' | 'reviewing'
-  deadline: string
-  progress: number
+type Status = 'all' | 'pending' | 'in_progress' | 'submitted' | 'approved'
+
+const MOCK_TASKS = [
+  { id: 1001, project: '自动驾驶场景标注', type: '2D BBox', status: 'pending',     priority: 'high',   reward: 0.8 },
+  { id: 1002, project: '点云 3D 标注',     type: '3D Box', status: 'in_progress', priority: 'medium', reward: 1.5 },
+  { id: 1003, project: '行人检测',         type: '2D 多边形', status: 'submitted', priority: 'low',    reward: 0.5 },
+  { id: 1004, project: '交通标志识别',     type: '2D BBox', status: 'approved',   priority: 'high',   reward: 0.8 },
+  { id: 1005, project: '自动驾驶场景标注', type: '2D BBox', status: 'pending',     priority: 'medium', reward: 0.8 },
+  { id: 1006, project: '点云 3D 标注',     type: '3D Box', status: 'pending',     priority: 'high',   reward: 1.5 },
+]
+
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pending:     { label: '待领取', color: '#f59e0b' },
+  in_progress: { label: '进行中', color: '#00d4ff' },
+  submitted:   { label: '审核中', color: '#a78bfa' },
+  approved:    { label: '已完成', color: '#10b981' },
+}
+const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
+  high:   { label: '高',  color: '#ef4444' },
+  medium: { label: '中',  color: '#f59e0b' },
+  low:    { label: '低',  color: '#9ba0ad' },
 }
 
-const TaskList: React.FC = () => {
+export default function TaskList() {
   const navigate = useNavigate()
-  const [filter, setFilter] = useState('all')
+  const [activeStatus, setActiveStatus] = useState<Status>('all')
 
-  // 模拟任务数据
-  const tasks: Task[] = [
-    { id: 1001, projectName: '法律文书实体识别', type: 'NER', priority: 'high', status: 'in_progress', deadline: '2026-03-30', progress: 65 },
-    { id: 1002, projectName: '医疗病历分类', type: '文本分类', priority: 'normal', status: 'assigned', deadline: '2026-04-02', progress: 0 },
-    { id: 1003, projectName: '电商评论情感分析', type: '情感分析', priority: 'low', status: 'pending', deadline: '2026-04-05', progress: 0 },
-    { id: 1004, projectName: '金融公告摘要', type: '文本摘要', priority: 'high', status: 'reviewing', deadline: '2026-03-28', progress: 100 },
-    { id: 1005, projectName: '合同关键信息提取', type: '信息抽取', priority: 'normal', status: 'pending', deadline: '2026-04-01', progress: 0 },
+  const filtered = MOCK_TASKS.filter(t => activeStatus === 'all' || t.status === activeStatus)
+
+  const TABS: { key: Status; label: string }[] = [
+    { key: 'all',         label: `全部 (${MOCK_TASKS.length})` },
+    { key: 'pending',     label: `待领取 (${MOCK_TASKS.filter(t => t.status === 'pending').length})` },
+    { key: 'in_progress', label: '进行中' },
+    { key: 'submitted',   label: '审核中' },
+    { key: 'approved',    label: '已完成' },
   ]
 
-  const getPriorityColor = (priority: string) => {
-    const colors: Record<string, string> = {
-      high: 'red',
-      normal: 'blue',
-      low: 'green',
+  function startTask(task: typeof MOCK_TASKS[0]) {
+    if (task.type.includes('3D')) {
+      navigate(`/annotate-3d/${task.id}`)
+    } else {
+      navigate(`/annotate-image/${task.id}`)
     }
-    return colors[priority] || 'default'
   }
-
-  const getPriorityText = (priority: string) => {
-    const texts: Record<string, string> = {
-      high: '高',
-      normal: '中',
-      low: '低',
-    }
-    return texts[priority] || priority
-  }
-
-  const getStatusBadge = (status: string) => {
-    const configs: Record<string, { status: 'success' | 'processing' | 'default' | 'warning'; text: string; icon: React.ReactNode }> = {
-      pending: { status: 'default', text: '待领取', icon: <Clock className="w-3 h-3" /> },
-      assigned: { status: 'warning', text: '已分配', icon: <AlertCircle className="w-3 h-3" /> },
-      in_progress: { status: 'processing', text: '进行中', icon: <Play className="w-3 h-3" /> },
-      reviewing: { status: 'success', text: '审核中', icon: <CheckCircle2 className="w-3 h-3" /> },
-    }
-    const config = configs[status]
-    return (
-      <Badge 
-        status={config.status} 
-        text={
-          <span className="flex items-center gap-1">{config.icon} {config.text}</span>
-        } 
-      />
-    )
-  }
-
-  const columns = [
-    {
-      title: '任务ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-      render: (id: number) => (
-        <span className="font-mono text-ds-primary">#{id}</span>
-      ),
-    },
-    {
-      title: '项目名称',
-      dataIndex: 'projectName',
-      key: 'projectName',
-      render: (text: string, record: Task) => (
-        <div>
-          <div className="font-medium text-white">{text}</div>
-          <div className="text-xs text-ds-text-muted">{record.type}</div>
-        </div>
-      ),
-    },
-    {
-      title: '优先级',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 100,
-      render: (priority: string) => (
-        <Tag color={getPriorityColor(priority)} className="rounded-full">
-          {getPriorityText(priority)}
-        </Tag>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: string) => getStatusBadge(status),
-    },
-    {
-      title: '进度',
-      dataIndex: 'progress',
-      key: 'progress',
-      width: 150,
-      render: (progress: number) => (
-        <div className="flex items-center gap-2">
-          <Progress 
-            percent={progress} 
-            size="small" 
-            strokeColor={progress === 100 ? '#10b981' : '#00d4ff'}
-            className="w-24"
-          />
-          <span className="text-xs text-ds-text-muted">{progress}%</span>
-        </div>
-      ),
-    },
-    {
-      title: '截止时间',
-      dataIndex: 'deadline',
-      key: 'deadline',
-      width: 120,
-      render: (date: string) => (
-        <span className="text-sm text-ds-text-muted">{date}</span>
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 150,
-      render: (_: any, record: Task) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<Play className="w-4 h-4" />}
-            onClick={() => navigate(`/annotate/${record.id}`)}
-            disabled={record.status === 'reviewing'}
-            className="bg-ds-primary border-0 hover:opacity-90"
-          >
-            {record.status === 'in_progress' ? '继续' : '开始'}
-          </Button>
-          
-          <Dropdown
-            menu={{
-              items: [
-                { key: '1', label: '查看详情' },
-                { key: '2', label: '放弃任务', danger: true },
-              ]
-            }}
-          >
-            <Button size="small" icon={<MoreVertical className="w-4 h-4" />} />
-          </Dropdown>
-        </Space>
-      ),
-    },
-  ]
-
-  const filteredTasks = filter === 'all' 
-    ? tasks 
-    : tasks.filter(t => t.status === filter)
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">任务列表</h1>
-          <p className="text-ds-text-muted mt-1">管理和执行您的标注任务</p>
-        </div>
-        
-        <Button 
-          icon={<Filter className="w-4 h-4" />}
-          className="border-ds-border hover:border-ds-primary hover:text-ds-primary"
-        >
-          筛选
-        </Button>
-      </div>
+    <div className="p-8 max-w-5xl">
+      <h1 className="text-xl font-semibold mb-6">任务列表</h1>
 
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: '待领取', value: 12, color: 'text-ds-text-muted' },
-          { label: '进行中', value: 5, color: 'text-ds-primary' },
-          { label: '审核中', value: 3, color: 'text-ds-accent' },
-          { label: '已完成', value: 156, color: 'text-ds-success' },
-        ].map((stat, index) => (
-          <div 
-            key={index}
-            className="gradient-border p-4 card-hover cursor-pointer"
-            onClick={() => setFilter(index === 0 ? 'pending' : index === 1 ? 'in_progress' : index === 2 ? 'reviewing' : 'all')}
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-[#12121a] border border-[#1e1e2e] rounded-xl p-1 w-fit">
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveStatus(tab.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs transition-all
+              ${activeStatus === tab.key
+                ? 'bg-[#00d4ff]/10 text-[#00d4ff] ring-1 ring-[#00d4ff]/20'
+                : 'text-white/40 hover:text-white/70'}`}
           >
-            <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-            <div className="text-sm text-ds-text-muted mt-1">{stat.label}</div>
-          </div>
+            {tab.label}
+          </button>
         ))}
       </div>
 
-      {/* 任务列表 */}
-      <div className="gradient-border">
-        <Table
-          columns={columns}
-          dataSource={filteredTasks}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-          className="tech-table"
-        />
+      {/* Table */}
+      <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#1e1e2e]">
+              {['任务 ID', '项目', '类型', '优先级', '状态', '奖励', '操作'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-[11px] text-white/30 font-medium uppercase tracking-wider">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((task, i) => {
+              const st = STATUS_CONFIG[task.status]
+              const pr = PRIORITY_CONFIG[task.priority]
+              return (
+                <tr key={task.id}
+                  className={`border-b border-[#1e1e2e]/50 hover:bg-white/[0.02] transition-colors
+                    ${i === filtered.length - 1 ? 'border-b-0' : ''}`}>
+                  <td className="px-4 py-3 font-mono text-white/50 text-xs">#{task.id}</td>
+                  <td className="px-4 py-3 text-white/70">{task.project}</td>
+                  <td className="px-4 py-3 text-white/50 text-xs">{task.type}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs px-2 py-0.5 rounded" style={{ background: `${pr.color}15`, color: pr.color }}>
+                      {pr.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs px-2 py-0.5 rounded" style={{ background: `${st.color}15`, color: st.color }}>
+                      {st.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[#10b981] font-mono text-xs">¥{task.reward}</td>
+                  <td className="px-4 py-3">
+                    {(task.status === 'pending' || task.status === 'in_progress') && (
+                      <button
+                        onClick={() => startTask(task)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-[#00d4ff]/10 text-[#00d4ff] border border-[#00d4ff]/20
+                          hover:bg-[#00d4ff]/20 active:scale-95 transition-all"
+                      >
+                        开始标注
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
 }
-
-export default TaskList
