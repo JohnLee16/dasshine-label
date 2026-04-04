@@ -3,14 +3,15 @@ import { useState } from 'react'
 import { message } from 'antd'
 import { v4 as uuid } from 'uuid'
 import useAnnotationStore, { Annotation2D } from '../store/annotationStore'
-import { useAnnotationHotkeys, useAutoSave, useLoadSaved } from '../hooks/useAnnotation'
+import { useAnnotationHotkeys, useAutoSave, useDraftManager } from '../hooks/useAnnotation'
 import '../components/annotation/annotation.css'
 
-import AnnotationTopBar  from '../components/annotation/AnnotationTopBar'
-import AnnotationToolbar from '../components/annotation/AnnotationToolbar'
-import Canvas2D          from '../components/annotation/2d/Canvas2D'
-import RightPanel        from '../components/annotation/RightPanel'
-import ExportPanel       from '../components/annotation/ExportPanel'
+import AnnotationTopBar   from '../components/annotation/AnnotationTopBar'
+import AnnotationToolbar  from '../components/annotation/AnnotationToolbar'
+import Canvas2D           from '../components/annotation/2d/Canvas2D'
+import RightPanel         from '../components/annotation/RightPanel'
+import ExportPanel        from '../components/annotation/ExportPanel'
+import DraftRestorePrompt from '../components/annotation/DraftRestorePrompt'
 
 const MOCK_IMAGES = [
   'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=1280&q=80',
@@ -43,29 +44,53 @@ export default function ImageAnnotation() {
   const [currentIdx, setCurrentIdx] = useState(0)
   const [aiLoading, setAiLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
-  const { annotations2d } = useAnnotationStore()
+  const [showRestorePrompt, setShowRestorePrompt] = useState(true)
 
+  const { annotations2d, saveDraft } = useAnnotationStore()
+
+  // Hooks
   useAnnotationHotkeys()
   useAutoSave(taskId)
-  useLoadSaved(taskId)
+  const { switchToFrame, hasDraftForFrame } = useDraftManager(taskId)
 
   const currentImage = MOCK_IMAGES[currentIdx % MOCK_IMAGES.length]
   const imageName = `frame_${String(currentIdx + 1).padStart(4, '0')}.jpg`
 
-  function clearFrame() {
-    useAnnotationStore.setState({ annotations2d: [], selectedIds2d: [], past: [], future: [] })
+  // Navigate between frames — saves current draft automatically
+  const goNext = () => {
+    if (currentIdx < MOCK_IMAGES.length - 1) {
+      const hasDraft = switchToFrame(currentIdx + 1)
+      setCurrentIdx(i => i + 1)
+      setShowRestorePrompt(hasDraft)
+    }
   }
-  const goNext = () => { setCurrentIdx(i => Math.min(i + 1, MOCK_IMAGES.length - 1)); clearFrame() }
-  const goPrev = () => { setCurrentIdx(i => Math.max(i - 1, 0)); clearFrame() }
+  const goPrev = () => {
+    if (currentIdx > 0) {
+      const hasDraft = switchToFrame(currentIdx - 1)
+      setCurrentIdx(i => i - 1)
+      setShowRestorePrompt(hasDraft)
+    }
+  }
 
   function loadAI() {
     setAiLoading(true)
     setTimeout(() => {
       const anns = makeAIAnnotations(currentIdx)
       useAnnotationStore.setState({ annotations2d: anns })
+      useAnnotationStore.getState().markDirty()
       setAiLoading(false)
       message.success({ content: `AI 预标注完成，生成 ${anns.length} 个候选框`, duration: 3 })
     }, 1100)
+  }
+
+  function handleSubmit() {
+    // Mark draft as submitted
+    saveDraft()
+    const key = `${taskId}:${currentIdx}`
+    useAnnotationStore.setState(s => {
+      if (s.drafts[key]) s.drafts[key].isSubmitted = true
+    })
+    message.success({ content: '标注已提交！', duration: 3 })
   }
 
   const aiCount     = annotations2d.filter(a => a.isAI).length
@@ -80,12 +105,29 @@ export default function ImageAnnotation() {
         onPrev={goPrev}
         onNext={goNext}
         onExport={() => setShowExport(v => !v)}
+        onSubmit={handleSubmit}
       />
+
       <div className="flex flex-1 overflow-hidden">
         <AnnotationToolbar />
+
         <div className="flex-1 relative overflow-hidden">
           <Canvas2D imageUrl={currentImage} />
 
+          {/* Draft restore prompt */}
+          {showRestorePrompt && (
+            <DraftRestorePrompt
+              taskId={taskId}
+              imageIndex={currentIdx}
+              onRestored={() => {
+                setShowRestorePrompt(false)
+                message.success({ content: '草稿已恢复', duration: 2 })
+              }}
+              onDiscarded={() => setShowRestorePrompt(false)}
+            />
+          )}
+
+          {/* AI button */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 pointer-events-auto">
             <button
               onClick={loadAI} disabled={aiLoading}
@@ -101,21 +143,40 @@ export default function ImageAnnotation() {
                   </svg>}
               {aiLoading ? 'AI 预标注中…' : 'AI 预标注'}
             </button>
+
             {aiCount > 0 && (
               <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm border border-[#00d4ff]/20 text-[#00d4ff]/70 text-[10px] px-2.5 py-1.5 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] animate-pulse" />
                 {aiCount} AI 候选 · {manualCount} 人工确认
               </div>
             )}
+
+            {/* Draft indicator per frame */}
+            {MOCK_IMAGES.map((_, i) => i).filter(i => i !== currentIdx && hasDraftForFrame(i)).length > 0 && (
+              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm border border-[#f59e0b]/20 text-[#f59e0b]/60 text-[10px] px-2 py-1.5 rounded-lg">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
+                  <path d="M2 2h8v8H2V2zM4 2v3h4V2M3.5 8h5" strokeLinecap="round"/>
+                </svg>
+                其他帧有草稿
+              </div>
+            )}
           </div>
 
+          {/* Export panel */}
           {showExport && (
             <div className="absolute top-12 right-4 z-30">
-              <ExportPanel taskId={taskId} imageName={imageName} imageWidth={1280} imageHeight={720} onClose={() => setShowExport(false)} />
+              <ExportPanel
+                taskId={taskId}
+                imageName={imageName}
+                imageWidth={1280}
+                imageHeight={720}
+                onClose={() => setShowExport(false)}
+              />
             </div>
           )}
         </div>
-        <RightPanel />
+
+        <RightPanel taskId={taskId} />
       </div>
     </div>
   )

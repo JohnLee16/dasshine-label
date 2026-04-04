@@ -6,7 +6,12 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
 
 from app.core.config import settings
-
+try:
+    from app.models.base import Base  # noqa: F401
+except ImportError:
+    from sqlalchemy.ext.declarative import declarative_base
+    Base = declarative_base()
+    
 # 创建数据库引擎
 engine = create_engine(
     str(settings.DATABASE_URL),  # Pydantic v2 需要转换为字符串
@@ -38,3 +43,5 @@ def init_db() -> None:
     from app.models import user, project, task, annotation
     
     Base.metadata.create_all(bind=engine)
+
+

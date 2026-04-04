@@ -56,7 +56,8 @@ def create_application() -> FastAPI:
     app.include_router(export.router, prefix="/api/v1", tags=["导出"])
     app.include_router(auto_label.router, prefix="/api/v1", tags=["自动标注"])
     app.include_router(quality.router, prefix="/api/v1", tags=["质量控制"])
-    
+    # app.include_router(projects.router, prefix="/api/v1"， tags=["项目管理"])
+
     @app.get("/")
     async def root():
         return {
