@@ -55,45 +55,6 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 # ─── FastAPI 依赖注入 ─────────────────────────────────────────────────────────
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-):
-    """获取当前登录用户（FastAPI 依赖）"""
-    from app.models import User
-
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="身份验证失败，请重新登录",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    payload = decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-
-    # 兼容 sub 存 int 或 str 两种情况
-    user_id = payload.get("sub")
-    if user_id is None:
-        raise credentials_exception
-
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        raise credentials_exception
-
-    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
-    if user is None:
-        raise credentials_exception
-
-    return user
-
-
-def require_admin(current_user=Depends(get_current_user)):
-    """要求管理员权限（FastAPI 依赖）"""
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限",
-        )
-    return current_user
+# 从 deps.py 转发，避免重复定义
+from app.api.deps import get_current_user, get_current_admin
+require_admin = get_current_admin

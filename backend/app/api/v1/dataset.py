@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.api.deps import get_current_user, get_current_admin as require_admin
 from app.models.user import User
 from app.services.project_service import ProjectService
 from app.services.dataset_service import DatasetImportService

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user, require_admin
+from app.api.deps import get_current_user, get_current_admin as require_admin
 from app.models.user import User
 from app.models.project import Project, ProjectStatus
 from app.schemas.project_schemas import (
