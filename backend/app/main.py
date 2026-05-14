@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import auth, projects, tasks, annotations, users, export, auto_label, quality, annotations_3d
+from app.api.v1 import auth, projects, tasks, annotations, users, export, auto_label, quality, annotations_3d, embodied
 
 
 @asynccontextmanager
@@ -53,6 +53,7 @@ def create_application() -> FastAPI:
     app.include_router(tasks.router, prefix="/api/v1", tags=["任务"])
     app.include_router(annotations.router, prefix="/api/v1", tags=["标注"])
     app.include_router(annotations_3d.router, prefix="/api/v1", tags=["3D标注"])
+    app.include_router(embodied.router, prefix="/api/v1", tags=["具身标注"])
     app.include_router(export.router, prefix="/api/v1", tags=["导出"])
     app.include_router(auto_label.router, prefix="/api/v1", tags=["自动标注"])
     app.include_router(quality.router, prefix="/api/v1", tags=["质量控制"])

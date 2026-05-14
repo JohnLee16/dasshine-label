@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import type { EmbodiedAnnotationDocument } from '../types/embodied'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
@@ -96,6 +97,14 @@ export const projectApi = {
   // 添加项目成员
   addMember: (projectId: number, userId: number, role: string) =>
     api.post(`/projects/${projectId}/members`, { user_id: userId, role }),
+}
+
+/** 具身 Episode：manifest + 标注文档，与后端 `app/api/v1/embodied.py` 同步 */
+export const embodiedTaskApi = {
+  getManifest: (taskId: number) => api.get(`/tasks/${taskId}/embodied/manifest`),
+  getAnnotation: (taskId: number) => api.get(`/tasks/${taskId}/embodied/annotation`),
+  putAnnotation: (taskId: number, body: EmbodiedAnnotationDocument) =>
+    api.put(`/tasks/${taskId}/embodied/annotation`, body),
 }
 
 // 任务相关 API

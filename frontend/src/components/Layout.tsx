@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 
-const NAV = [
+const NAV: { to: string; label: string; icon: JSX.Element }[] = [
   {
     to: '/',
     label: '工作台',

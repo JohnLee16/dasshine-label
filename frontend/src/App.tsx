@@ -11,6 +11,9 @@ import AnnotationWorkspace from './pages/AnnotationWorkspace'
 import ImageAnnotation from './pages/ImageAnnotation'
 import PointCloudAnnotation from './pages/PointCloudAnnotation'
 import Projects from './pages/Projects'
+import EmbodiedHub from './pages/EmbodiedHub'
+import EmbodiedAnnotationWorkspace from './pages/EmbodiedAnnotationWorkspace'
+import LanguageHub from './pages/LanguageHub'
 import './index.css'
 
 function App() {
@@ -47,10 +50,13 @@ function App() {
         }>
           <Route index element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="embodied" element={<EmbodiedHub />} />
+          <Route path="language" element={<LanguageHub />} />
           <Route path="tasks" element={<TaskList />} />
           <Route path="annotate/:taskId" element={<AnnotationWorkspace />} />
           <Route path="annotate-image/:taskId" element={<ImageAnnotation />} />
           <Route path="annotate-3d/:taskId" element={<PointCloudAnnotation />} />
+          <Route path="annotate-embodied/:taskId" element={<EmbodiedAnnotationWorkspace />} />
         </Route>
       </Routes>
     </>
