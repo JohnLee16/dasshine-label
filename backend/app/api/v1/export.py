@@ -15,6 +15,7 @@ from app.api.deps import get_db, get_current_user, get_current_admin
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
 from app.models.annotation import Annotation
+from app.services.annotation_result import get_annotation_result_dict
 
 router = APIRouter()
 
@@ -25,10 +26,10 @@ def export_to_json(tasks: List[Task]) -> str:
     for task in tasks:
         annotations = []
         for ann in task.annotations:
-            if not ann.is_discarded:
+            if ann.is_latest:
                 annotations.append({
                     "annotator_id": ann.annotator_id,
-                    "result": ann.result,
+                    "result": get_annotation_result_dict(ann),
                     "version": ann.version,
                     "work_time": ann.work_time
                 })
@@ -53,11 +54,11 @@ def export_to_csv(tasks: List[Task]) -> str:
     
     for task in tasks:
         for ann in task.annotations:
-            if not ann.is_discarded:
+            if ann.is_latest:
                 writer.writerow([
                     task.id,
                     json.dumps(task.data, ensure_ascii=False),
-                    json.dumps(ann.result, ensure_ascii=False),
+                    json.dumps(get_annotation_result_dict(ann), ensure_ascii=False),
                     ann.annotator_id,
                     task.status.value if hasattr(task.status, 'value') else task.status
                 ])
@@ -89,14 +90,15 @@ def export_to_coco(tasks: List[Task], project_name: str) -> dict:
         })
         
         for ann in task.annotations:
-            if not ann.is_discarded:
+            if ann.is_latest:
+                res = get_annotation_result_dict(ann)
                 coco_data["annotations"].append({
                     "id": f"{task.id}_{ann.id}",
                     "image_id": task.id,
                     "category_id": 1,
-                    "bbox": ann.result.get("bbox", []),
-                    "segmentation": ann.result.get("segmentation", []),
-                    "area": ann.result.get("area", 0),
+                    "bbox": res.get("bbox", []),
+                    "segmentation": res.get("segmentation", []),
+                    "area": res.get("area", 0),
                     "iscrowd": 0
                 })
     

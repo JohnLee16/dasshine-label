@@ -240,21 +240,24 @@ def submit_task(
     
     if task.status not in [TaskStatus.ANNOTATING, TaskStatus.ASSIGNED]:
         raise_bad_request("任务状态不正确")
-    
-    # 创建标注记录
-    from app.models.task import Annotation
+
     from datetime import datetime
-    
-    annotation = Annotation(
+
+    from app.models.annotation import Annotation, AnnotationStatus, AnnotationType
+    from app.services.embodied_merge import merge_embodied_draft_into_result
+
+    final_result = merge_embodied_draft_into_result(task, dict(request.result or {}))
+
+    db_annotation = Annotation(
         task_id=task_id,
-        annotator_id=current_user.id,
-        result=request.result,
-        started_at=task.started_at or task.assigned_at,
-        completed_at=datetime.utcnow(),
+        data_id=str(task_id),
+        annotation_type=AnnotationType.CLASSIFICATION,
+        data={"result": final_result},
+        status=AnnotationStatus.COMPLETED,
         work_time=request.work_time,
-        is_final=True
+        annotator_id=current_user.id,
     )
-    db.add(annotation)
+    db.add(db_annotation)
     
     # 更新任务状态
     task.status = TaskStatus.SUBMITTED
@@ -263,13 +266,14 @@ def submit_task(
     
     # 更新用户统计
     current_user.completed_tasks += 1
-    
+
     db.commit()
-    
+    db.refresh(db_annotation)
+
     return {
         "success": True,
         "message": "提交成功",
-        "annotation_id": annotation.id
+        "annotation_id": db_annotation.id,
     }
 
 

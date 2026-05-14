@@ -15,9 +15,11 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
-from app.models.task import Task, TaskStatus, Annotation, Review
+from app.models.task import Task, TaskStatus, Review
+from app.models.annotation import Annotation
 from app.models.user import User, AnnotatorLevel
 from app.models.project import Project
+from app.services.annotation_result import get_annotation_result_dict
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +74,7 @@ class QualityControlService:
         # 获取所有标注结果
         annotations = self.db.query(Annotation).filter(
             Annotation.task_id == task_id,
-            Annotation.is_discarded == False
+            Annotation.is_latest == True,  # noqa: E712
         ).all()
         
         if len(annotations) < 2:
@@ -86,7 +88,7 @@ class QualityControlService:
             )
         
         # 提取标注结果
-        results = [self._extract_result_key(a.result) for a in annotations]
+        results = [self._extract_result_key(get_annotation_result_dict(a)) for a in annotations]
         
         # 计算简单一致率
         agreement_rate = self._calculate_agreement_rate(results)
@@ -299,7 +301,7 @@ class QualityControlService:
             and_(
                 Annotation.annotator_id == user_id,
                 Task.is_golden == True,
-                Annotation.is_discarded == False
+                Annotation.is_latest == True,  # noqa: E712
             )
         ).all()
         
@@ -308,7 +310,7 @@ class QualityControlService:
             for ann in golden_annotations:
                 task = ann.task
                 if task.golden_answer:
-                    if self._results_match(ann.result, task.golden_answer):
+                    if self._results_match(get_annotation_result_dict(ann), task.golden_answer):
                         correct += 1
             accuracy = correct / len(golden_annotations)
         else:
