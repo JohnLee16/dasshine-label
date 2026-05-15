@@ -89,6 +89,9 @@ export default function ImageAnnotation() {
   const [showExport, setShowExport] = useState(false)
   const { annotations2d, labelClasses } = useAnnotationStore()
 
+  const { annotations2d, saveDraft } = useAnnotationStore()
+
+  // Hooks
   useAnnotationHotkeys()
 
   // 首次：从 localStorage 恢复会话（帧索引、标签集、当前帧标注）
@@ -184,6 +187,7 @@ export default function ImageAnnotation() {
     window.setTimeout(() => {
       const anns = makeAIAnnotations(currentIdx)
       useAnnotationStore.setState({ annotations2d: anns })
+      useAnnotationStore.getState().markDirty()
       setAiLoading(false)
       message.success({ content: `AI 预标注完成（${PRELABEL_MODELS.find((m) => m.id === loadedModelId)?.label ?? loadedModelId}），生成 ${anns.length} 个候选框`, duration: 3 })
     }, 1100)
@@ -204,8 +208,10 @@ export default function ImageAnnotation() {
         onExport={() => setShowExport((v) => !v)}
         saveHint={lastSavedAt ? `已保存 ${new Date(lastSavedAt).toLocaleTimeString()}` : undefined}
       />
+
       <div className="flex flex-1 overflow-hidden">
         <AnnotationToolbar />
+
         <div className="flex-1 relative overflow-hidden">
           <Canvas2D imageUrl={currentImage} />
 
@@ -270,8 +276,19 @@ export default function ImageAnnotation() {
                 {aiCount} AI 候选 · {manualCount} 人工确认
               </div>
             )}
+
+            {/* Draft indicator per frame */}
+            {MOCK_IMAGES.map((_, i) => i).filter(i => i !== currentIdx && hasDraftForFrame(i)).length > 0 && (
+              <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm border border-[#f59e0b]/20 text-[#f59e0b]/60 text-[10px] px-2 py-1.5 rounded-lg">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
+                  <path d="M2 2h8v8H2V2zM4 2v3h4V2M3.5 8h5" strokeLinecap="round"/>
+                </svg>
+                其他帧有草稿
+              </div>
+            )}
           </div>
 
+          {/* Export panel */}
           {showExport && (
             <div className="absolute top-12 right-4 z-30">
               <ExportPanel

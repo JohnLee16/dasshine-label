@@ -199,7 +199,7 @@ function LabelPanel({ labelClassAcl }: { labelClassAcl?: LabelClassAcl }) {
         </div>
       </Modal>
     </div>
-  );
+  )
 }
 
 // ─── AnnotationList2D ────────────────────────────────────────────────────────
@@ -211,47 +211,34 @@ function AnnotationList2D() {
   } = useAnnotationStore();
 
   if (annotations2d.length === 0)
-    return <div className="text-xs text-white/20 text-center py-6">No annotations yet</div>;
-
+    return <div className="text-xs text-white/20 text-center py-6">暂无标注</div>
   return (
     <div className="space-y-1">
       {annotations2d.map((ann) => {
-        const isSelected = selectedIds2d.includes(ann.id);
+        const isSelected = selectedIds2d.includes(ann.id)
         return (
           <div
             key={ann.id}
             onClick={() => selectAnnotations2d([ann.id])}
-            className={`
-              flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all group
-              ${isSelected ? 'bg-[#1e1e2e] ring-1' : 'hover:bg-white/5'}
-            `}
+            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all group
+              ${isSelected ? 'bg-[#1e1e2e]' : 'hover:bg-white/5'}`}
             style={{ boxShadow: isSelected ? `0 0 0 1px ${ann.color}40` : undefined }}
           >
             <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: ann.color }} />
             <span className="text-xs text-white/70 flex-1 truncate">{ann.label}</span>
             <span className="text-[10px] text-white/30">{ann.type}</span>
             {ann.isAI && <span className="text-[10px] text-[#00d4ff]/60">AI</span>}
-            {ann.score != null && (
-              <span className="text-[10px] text-white/30">{(ann.score * 100).toFixed(0)}%</span>
-            )}
-            {/* visibility toggle */}
+            {ann.score != null && <span className="text-[10px] text-white/30">{(ann.score * 100).toFixed(0)}%</span>}
             <button
-              onClick={(e) => { e.stopPropagation(); updateAnnotation2d(ann.id, { visible: !ann.visible }); }}
+              onClick={(e) => { e.stopPropagation(); updateAnnotation2d(ann.id, { visible: !ann.visible }) }}
               className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/70 transition-all"
             >
-              {ann.visible ? (
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-                  <path d="M2 2l12 12M6.5 6.6A2 2 0 0010 9.5M4.2 4.3C2.7 5.4 1.5 7 1.5 8s2.5 5 6.5 5c1.4 0 2.7-.4 3.8-1M7 3.1C7.3 3 7.7 3 8 3c4 0 6.5 5 6.5 5s-.6 1.3-1.8 2.5"/>
-                </svg>
-              )}
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>
+              </svg>
             </button>
-            {/* delete */}
             <button
-              onClick={(e) => { e.stopPropagation(); deleteAnnotation2d([ann.id]); }}
+              onClick={(e) => { e.stopPropagation(); deleteAnnotation2d([ann.id]) }}
               className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -259,35 +246,28 @@ function AnnotationList2D() {
               </svg>
             </button>
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 // ─── AnnotationList3D ────────────────────────────────────────────────────────
 
 function AnnotationList3D() {
-  const {
-    boxes3d, selectedIds3d,
-    selectBoxes3d, deleteBox3d, updateBox3d,
-  } = useAnnotationStore();
-
+  const { boxes3d, selectedIds3d, selectBoxes3d, deleteBox3d, updateBox3d } = useAnnotationStore()
   if (boxes3d.length === 0)
-    return <div className="text-xs text-white/20 text-center py-6">No 3D boxes yet</div>;
-
+    return <div className="text-xs text-white/20 text-center py-6">暂无 3D 框</div>
   return (
     <div className="space-y-1">
       {boxes3d.map((box) => {
-        const isSelected = selectedIds3d.includes(box.id);
+        const isSelected = selectedIds3d.includes(box.id)
         return (
           <div
             key={box.id}
             onClick={() => selectBoxes3d([box.id])}
-            className={`
-              flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all group
-              ${isSelected ? 'bg-[#1e1e2e] ring-1' : 'hover:bg-white/5'}
-            `}
+            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all group
+              ${isSelected ? 'bg-[#1e1e2e]' : 'hover:bg-white/5'}`}
             style={{ boxShadow: isSelected ? `0 0 0 1px ${box.color}40` : undefined }}
           >
             <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: box.color }} />
@@ -297,15 +277,7 @@ function AnnotationList3D() {
             </span>
             {box.isAI && <span className="text-[10px] text-[#00d4ff]/60">AI</span>}
             <button
-              onClick={(e) => { e.stopPropagation(); updateBox3d(box.id, { visible: !box.visible }); }}
-              className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/70 transition-all"
-            >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
-                <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/>
-              </svg>
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); deleteBox3d([box.id]); }}
+              onClick={(e) => { e.stopPropagation(); deleteBox3d([box.id]) }}
               className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
@@ -313,7 +285,7 @@ function AnnotationList3D() {
               </svg>
             </button>
           </div>
-        );
+        )
       })}
     </div>
   );
@@ -384,63 +356,65 @@ function PropertiesPanel() {
 // ─── SettingsPanel ────────────────────────────────────────────────────────────
 
 function SettingsPanel() {
-  const { showLabels, showConfidence, opacity, toggleLabels, toggleConfidence, setOpacity } = useAnnotationStore();
+  const { showLabels, showConfidence, opacity, toggleLabels, toggleConfidence, setOpacity } = useAnnotationStore()
   return (
     <div className="space-y-3 pt-3 border-t border-[#1e1e2e]">
-      <div className="text-[10px] text-white/30 uppercase tracking-widest">Display</div>
+      <div className="text-[10px] text-white/30 uppercase tracking-widest">显示设置</div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-white/50">Show labels</span>
+        <span className="text-xs text-white/50">显示标签</span>
         <Switch size="small" checked={showLabels} onChange={toggleLabels} />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-white/50">Confidence</span>
+        <span className="text-xs text-white/50">显示置信度</span>
         <Switch size="small" checked={showConfidence} onChange={toggleConfidence} />
       </div>
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-white/50">Fill opacity</span>
+          <span className="text-xs text-white/50">填充透明度</span>
           <span className="text-[10px] text-white/30 font-mono">{Math.round(opacity * 100)}%</span>
         </div>
-        <Slider
-          min={0} max={1} step={0.05} value={opacity}
-          onChange={setOpacity}
-          className="!m-0"
-          tooltip={{ open: false }}
-        />
+        <Slider min={0} max={1} step={0.05} value={opacity} onChange={setOpacity}
+          className="!m-0" tooltip={{ open: false }} />
       </div>
     </div>
-  );
+  )
 }
 
-// ─── RightPanel (main export) ────────────────────────────────────────────────
+// ─── RightPanel ───────────────────────────────────────────────────────────────
 
 export default function RightPanel({ labelClassAcl }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'labels' | 'list' | 'settings'>('labels');
   const { mode, annotations2d, boxes3d } = useAnnotationStore();
 
-  const count = mode === '2d' ? annotations2d.length : boxes3d.length;
+  const TABS = [
+    { key: 'labels' as const,   label: '标签' },
+    { key: 'list' as const,     label: `列表(${count})` },
+    { key: 'drafts' as const,   label: '草稿', badge: autoSaveMeta.isDirty },
+    { key: 'settings' as const, label: '设置' },
+  ]
 
   return (
     <div className="w-60 flex flex-col bg-[#12121a] border-l border-[#1e1e2e] overflow-hidden">
-      {/* tabs */}
+      {/* Tabs */}
       <div className="flex border-b border-[#1e1e2e]">
-        {(['labels', 'list', 'settings'] as const).map((tab) => (
+        {TABS.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`
-              flex-1 py-2.5 text-[11px] capitalize transition-all
-              ${activeTab === tab
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 py-2.5 text-[11px] relative transition-all
+              ${activeTab === tab.key
                 ? 'text-[#00d4ff] border-b-2 border-[#00d4ff] -mb-px'
-                : 'text-white/30 hover:text-white/60'}
-            `}
+                : 'text-white/30 hover:text-white/60'}`}
           >
-            {tab === 'list' ? `List (${count})` : tab}
+            {tab.label}
+            {tab.badge && (
+              <span className="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* content */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/10">
         {activeTab === 'labels' && (
           <>
@@ -454,5 +428,5 @@ export default function RightPanel({ labelClassAcl }: RightPanelProps) {
         {activeTab === 'settings' && <SettingsPanel />}
       </div>
     </div>
-  );
+  )
 }

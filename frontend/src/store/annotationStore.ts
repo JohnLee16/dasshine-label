@@ -1,72 +1,87 @@
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
+import { create } from 'zustand'
+import { immer } from 'zustand/middleware/immer'
+import { persist, subscribeWithSelector } from 'zustand/middleware'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AnnotationType = 'bbox' | 'polygon' | 'keypoint' | 'polyline' | 'box3d';
-export type AnnotationMode = '2d' | '3d';
+export type AnnotationType = 'bbox' | 'polygon' | 'polyline' | 'keypoint' | 'box3d'
+export type AnnotationMode = '2d' | '3d'
 
-export interface Point2D { x: number; y: number; }
-export interface Point3D { x: number; y: number; z: number; }
+export interface Point2D { x: number; y: number }
+export interface Point3D { x: number; y: number; z: number }
 
 export interface Annotation2D {
-  id: string;
-  type: AnnotationType;
-  label: string;
-  color: string;
-  points: Point2D[];      // bbox: [tl, br]; polygon/polyline: vertices; keypoint: [pt]
-  visible: boolean;
-  locked: boolean;
-  score?: number;         // AI confidence
-  isAI?: boolean;
-  attributes?: Record<string, string | number | boolean>;
+  id: string
+  type: AnnotationType
+  label: string
+  color: string
+  points: Point2D[]
+  visible: boolean
+  locked: boolean
+  score?: number
+  isAI?: boolean
+  attributes?: Record<string, string | number | boolean>
 }
 
 export interface Box3D {
-  id: string;
-  label: string;
-  color: string;
-  center: Point3D;
-  size: Point3D;          // width, height, depth
-  rotation: Point3D;      // rx, ry, rz in radians
-  visible: boolean;
-  locked: boolean;
-  score?: number;
-  isAI?: boolean;
-  attributes?: Record<string, string | number | boolean>;
+  id: string
+  label: string
+  color: string
+  center: Point3D
+  size: Point3D
+  rotation: Point3D
+  visible: boolean
+  locked: boolean
+  score?: number
+  isAI?: boolean
+  attributes?: Record<string, string | number | boolean>
 }
 
 export interface LabelClass {
-  id: string;
-  name: string;
-  color: string;
-  hotkey?: string;
-  attributes?: AttributeDef[];
+  id: string
+  name: string
+  color: string
+  hotkey?: string
 }
 
-export interface AttributeDef {
-  key: string;
-  type: 'text' | 'select' | 'number' | 'boolean';
-  options?: string[];
-  defaultValue?: string | number | boolean;
+export type Tool2D = 'select' | 'bbox' | 'polygon' | 'polyline' | 'keypoint' | 'pan' | 'eraser'
+export type Tool3D = 'select' | 'box3d' | 'orbit' | 'pan'
+
+// ── Draft = one frame's saved state ──────────────────────────────────────────
+
+export interface AnnotationDraft {
+  taskId: string
+  imageIndex: number
+  annotations2d: Annotation2D[]
+  boxes3d: Box3D[]
+  savedAt: string        // ISO timestamp
+  isSubmitted: boolean
 }
 
-export type Tool2D = 'select' | 'bbox' | 'polygon' | 'polyline' | 'keypoint' | 'pan' | 'eraser';
-export type Tool3D = 'select' | 'box3d' | 'orbit' | 'pan';
+// ── Auto-save metadata ────────────────────────────────────────────────────────
+
+export interface AutoSaveMeta {
+  lastSavedAt: string | null  // ISO
+  isDirty: boolean            // unsaved changes exist
+  saveCount: number
+  error: string | null
+}
+
+// ─── Store state ──────────────────────────────────────────────────────────────
 
 interface AnnotationState {
   // Mode
-  mode: AnnotationMode;
+  mode: AnnotationMode
 
-  // 2D state
-  annotations2d: Annotation2D[];
-  activeTool2d: Tool2D;
-  selectedIds2d: string[];
+  // 2D
+  annotations2d: Annotation2D[]
+  activeTool2d: Tool2D
+  selectedIds2d: string[]
 
-  // 3D state
-  boxes3d: Box3D[];
-  activeTool3d: Tool3D;
-  selectedIds3d: string[];
+  // 3D
+  boxes3d: Box3D[]
+  activeTool3d: Tool3D
+  selectedIds3d: string[]
 
   // Shared
   labelClasses: LabelClass[];
@@ -117,15 +132,19 @@ interface AnnotationState {
 // ─── Default label classes ────────────────────────────────────────────────────
 
 const DEFAULT_LABELS: LabelClass[] = [
-  { id: '1', name: 'car',        color: '#00d4ff', hotkey: '1' },
-  { id: '2', name: 'person',     color: '#7c3aed', hotkey: '2' },
-  { id: '3', name: 'truck',      color: '#10b981', hotkey: '3' },
-  { id: '4', name: 'bicycle',    color: '#f59e0b', hotkey: '4' },
-  { id: '5', name: 'motorcycle', color: '#ef4444', hotkey: '5' },
+  { id: '1', name: 'car',          color: '#00d4ff', hotkey: '1' },
+  { id: '2', name: 'person',       color: '#7c3aed', hotkey: '2' },
+  { id: '3', name: 'truck',        color: '#10b981', hotkey: '3' },
+  { id: '4', name: 'bicycle',      color: '#f59e0b', hotkey: '4' },
+  { id: '5', name: 'motorcycle',   color: '#ef4444', hotkey: '5' },
   { id: '6', name: 'traffic_sign', color: '#ec4899', hotkey: '6' },
-  { id: '7', name: 'pedestrian', color: '#a78bfa', hotkey: '7' },
-  { id: '8', name: 'bus',        color: '#34d399', hotkey: '8' },
-];
+  { id: '7', name: 'pedestrian',   color: '#a78bfa', hotkey: '7' },
+  { id: '8', name: 'bus',          color: '#34d399', hotkey: '8' },
+]
+
+function draftKey(taskId: string, imageIndex: number) {
+  return `${taskId}:${imageIndex}`
+}
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 

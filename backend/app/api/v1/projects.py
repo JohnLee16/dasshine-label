@@ -2,30 +2,60 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
-from datetime import datetime
 
-from app.api.deps import get_db, get_current_user
-from app.models.project import Project, ProjectType, ProjectStatus, ProjectMember
+from app.core.database import get_db
+from app.api.deps import get_current_user, get_current_admin as require_admin
 from app.models.user import User
 from app.services.project_acl import can_administrate_project
 
-router = APIRouter()
+router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-class ProjectCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=200)
-    description: str = None
-    type: ProjectType
-    annotation_schema: dict = Field(default_factory=dict)
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+def _to_summary(p: Project, db: Session) -> dict:
+    schema = _get_schema(p)
+    from app.models.project import ProjectMember
+    member_count = db.query(ProjectMember).filter(ProjectMember.project_id == p.id).count()
+    status_val = p.status.value if hasattr(p.status, "value") else str(p.status)
+    return {
+        "id": p.id,
+        "name": p.name,
+        "cover_color": schema.get("cover_color", "#00d4ff"),
+        "category": schema.get("category"),
+        "ann_type": schema.get("ann_type"),
+        "status": status_val,
+        "total_items": p.total_items or 0,
+        "approved_items": p.approved_items or 0,
+        "price_per_task": schema.get("price_per_task", 0.1),
+        "member_count": member_count,
+        "created_at": p.created_at,
+    }
 
 
-class ProjectUpdate(BaseModel):
-    name: str = Field(None, min_length=1, max_length=200)
-    description: str = None
-    status: ProjectStatus = None
-    annotation_schema: dict = None
-
+def _to_out(p: Project) -> dict:
+    schema = _get_schema(p)
+    status_val = p.status.value if hasattr(p.status, "value") else str(p.status)
+    return {
+        "id": p.id,
+        "name": p.name,
+        "description": p.description or "",
+        "cover_color": schema.get("cover_color", "#00d4ff"),
+        "category": schema.get("category"),
+        "ann_type": schema.get("ann_type"),
+        "status": status_val,
+        "dispatch_strategy": schema.get("dispatch_strategy", "smart"),
+        "tasks_per_annotator": schema.get("tasks_per_annotator", 10),
+        "cross_validate_count": schema.get("cross_validate_count", 1),
+        "price_per_task": schema.get("price_per_task", 0.1),
+        "auto_label_enabled": p.auto_label_enabled or False,
+        "auto_label_model": p.auto_label_model,
+        "auto_label_threshold": p.auto_label_threshold or 0.8,
+        "total_items": p.total_items or 0,
+        "labeled_items": p.labeled_items or 0,
+        "approved_items": p.approved_items or 0,
+        "created_at": p.created_at,
+    }
 
 class ProjectResponse(BaseModel):
     id: int
@@ -43,75 +73,57 @@ class ProjectResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ── CRUD ──────────────────────────────────────────────────────────────────────
 
-@router.get("/projects", response_model=List[ProjectResponse])
-def list_projects(
+@router.post("", status_code=201)
+def create_project(
+    payload: ProjectCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+):
+    svc = ProjectService(db)
+    project = svc.create(payload, current_user.id)
+    return _to_out(project)
+
+
+@router.get("")
+def list_projects(
     skip: int = 0,
-    limit: int = 20
-):
-    """获取项目列表"""
-    projects = db.query(Project).offset(skip).limit(limit).all()
-    return projects
-
-
-@router.post("/projects", response_model=ProjectResponse)
-def create_project(
-    project: ProjectCreate,
+    limit: int = Query(50, le=200),
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    my_projects: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """创建新项目"""
-    db_project = Project(
-        name=project.name,
-        description=project.description,
-        type=project.type,
-        status=ProjectStatus.DRAFT,
-        annotation_schema=project.annotation_schema,
-        created_by_id=current_user.id
-    )
-    db.add(db_project)
-    db.commit()
-    db.refresh(db_project)
-    
-    # 创建者为项目成员
-    member = ProjectMember(
-        project_id=db_project.id,
-        user_id=current_user.id,
-        role="owner",
-        can_assign=True,
-        can_review=True,
-        can_export=True
-    )
-    db.add(member)
-    db.commit()
-    
-    return db_project
+    svc = ProjectService(db)
+    user_id = current_user.id if (my_projects or not current_user.is_admin) else None
+    projects = svc.list_all(skip=skip, limit=limit, status=status,
+                            category=category, user_id=user_id)
+    return [_to_summary(p, db) for p in projects]
 
 
-@router.get("/projects/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}")
 def get_project(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    _: User = Depends(get_current_user),
 ):
-    """获取项目详情"""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = ProjectService(db).get(project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="项目不存在")
-    return project
+        raise HTTPException(404, "Project not found")
+    return _to_out(project)
 
 
-@router.put("/projects/{project_id}")
+@router.patch("/{project_id}")
 def update_project(
     project_id: int,
-    project_update: ProjectUpdate,
+    payload: ProjectUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """更新项目"""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    svc = ProjectService(db)
+    project = svc.get(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
     if not can_administrate_project(db, project, current_user):
@@ -130,7 +142,7 @@ def update_project(
 def delete_project(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    _: User = Depends(require_admin),
 ):
     """删除项目"""
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -144,13 +156,12 @@ def delete_project(
     return {"message": "删除成功"}
 
 
-@router.post("/projects/{project_id}/members")
-def add_project_member(
+@router.delete("/{project_id}/members/{user_id}")
+def remove_member(
     project_id: int,
     user_id: int,
-    role: str = "annotator",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """添加项目成员"""
     project = db.query(Project).filter(Project.id == project_id).first()
