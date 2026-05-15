@@ -13,7 +13,7 @@ export function useAnnotationHotkeys() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-      const { mode, activeTool2d, activeTool3d, setTool2d, setTool3d,
+      const { mode, setTool2d, setTool3d,
               undo, redo, deleteAnnotation2d, deleteBox3d,
               selectedIds2d, selectedIds3d, labelClasses, setActiveLabel } = store;
 

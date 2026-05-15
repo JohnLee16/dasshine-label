@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import useAuthStore from '../store/authStore'
 
 const MOCK_PROJECTS = [
   { id: 1, name: '自动驾驶场景标注', type: 'bbox',    status: 'active',   tasks: 5000, done: 3240, members: 12, reward: 0.8 },

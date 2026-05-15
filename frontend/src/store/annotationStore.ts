@@ -104,6 +104,9 @@ interface AnnotationState {
   toggleConfidence: () => void;
   setOpacity: (v: number) => void;
   setLabelClasses: (classes: LabelClass[]) => void;
+  addLabelClass: (lc: LabelClass) => void;
+  updateLabelClass: (id: string, patch: Partial<LabelClass>) => void;
+  removeLabelClass: (id: string) => void;
 
   // History
   pushHistory: () => void;
@@ -193,6 +196,59 @@ const useAnnotationStore = create<AnnotationState>()(
     toggleConfidence: () => set((s) => { s.showConfidence = !s.showConfidence; }),
     setOpacity: (v) => set((s) => { s.opacity = v; }),
     setLabelClasses: (classes) => set((s) => { s.labelClasses = classes; }),
+    addLabelClass: (lc) => set((s) => {
+      s.labelClasses.push(lc);
+      s.activeLabel = lc.name;
+    }),
+    updateLabelClass: (id, patch) => set((s) => {
+      const idx = s.labelClasses.findIndex((x) => x.id === id);
+      if (idx === -1) return;
+      const old = s.labelClasses[idx];
+      Object.assign(s.labelClasses[idx], patch);
+      const newName = patch.name ?? old.name;
+      const newColor = patch.color ?? old.color;
+      if (patch.name != null && patch.name !== old.name) {
+        for (const a of s.annotations2d) {
+          if (a.label === old.name) {
+            a.label = newName;
+            a.color = newColor;
+          }
+        }
+        for (const b of s.boxes3d) {
+          if (b.label === old.name) {
+            b.label = newName;
+            b.color = newColor;
+          }
+        }
+        if (s.activeLabel === old.name) s.activeLabel = newName;
+      } else if (patch.color != null) {
+        for (const a of s.annotations2d) {
+          if (a.label === old.name) a.color = newColor;
+        }
+        for (const b of s.boxes3d) {
+          if (b.label === old.name) b.color = newColor;
+        }
+      }
+    }),
+    removeLabelClass: (id) => set((s) => {
+      const rm = s.labelClasses.find((x) => x.id === id);
+      if (!rm || s.labelClasses.length <= 1) return;
+      s.labelClasses = s.labelClasses.filter((x) => x.id !== id);
+      const fb = s.labelClasses[0];
+      for (const a of s.annotations2d) {
+        if (a.label === rm.name) {
+          a.label = fb.name;
+          a.color = fb.color;
+        }
+      }
+      for (const b of s.boxes3d) {
+        if (b.label === rm.name) {
+          b.label = fb.name;
+          b.color = fb.color;
+        }
+      }
+      if (s.activeLabel === rm.name) s.activeLabel = fb.name;
+    }),
 
     pushHistory: () => {
       const { annotations2d, boxes3d, past } = get();

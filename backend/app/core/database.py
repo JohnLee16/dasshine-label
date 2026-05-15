@@ -35,6 +35,6 @@ def get_db() -> Generator[Session, None, None]:
 def init_db() -> None:
     """初始化数据库（创建表）"""
     from app.models.base import Base
-    from app.models import user, project, task, annotation
-    
+    from app.models import user, project, task, annotation, annotation_draft
+
     Base.metadata.create_all(bind=engine)

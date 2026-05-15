@@ -1,5 +1,5 @@
 # backend/app/api/v1/projects.py
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
@@ -8,6 +8,7 @@ from datetime import datetime
 from app.api.deps import get_db, get_current_user
 from app.models.project import Project, ProjectType, ProjectStatus, ProjectMember
 from app.models.user import User
+from app.services.project_acl import can_administrate_project
 
 router = APIRouter()
 
@@ -29,7 +30,7 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(BaseModel):
     id: int
     name: str
-    description: str
+    description: Optional[str]
     type: str
     status: str
     total_items: int
@@ -37,7 +38,8 @@ class ProjectResponse(BaseModel):
     approved_items: int
     progress: float
     created_at: datetime
-    
+    created_by_id: int
+
     class Config:
         from_attributes = True
 
@@ -112,7 +114,9 @@ def update_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    
+    if not can_administrate_project(db, project, current_user):
+        raise HTTPException(status_code=403, detail="仅管理员或项目所有者可修改项目")
+
     update_data = project_update.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(project, key, value)
@@ -132,7 +136,9 @@ def delete_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    
+    if not can_administrate_project(db, project, current_user):
+        raise HTTPException(status_code=403, detail="仅管理员或项目所有者可删除项目")
+
     db.delete(project)
     db.commit()
     return {"message": "删除成功"}
@@ -150,7 +156,9 @@ def add_project_member(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    
+    if not can_administrate_project(db, project, current_user):
+        raise HTTPException(status_code=403, detail="仅管理员或项目所有者可添加成员")
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")

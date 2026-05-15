@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Progress, Tooltip, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { Progress, Tooltip, message } from 'antd';
 import useAnnotationStore from '../../store/annotationStore';
 
 function useTimer() {
@@ -22,6 +22,8 @@ interface TopBarProps {
   onPrev?: () => void;
   onNext?: () => void;
   onExport?: () => void;
+  /** 本地保存时间提示（2D 会话等） */
+  saveHint?: string;
 }
 
 export default function AnnotationTopBar({
@@ -31,6 +33,7 @@ export default function AnnotationTopBar({
   onPrev,
   onNext,
   onExport,
+  saveHint,
 }: TopBarProps) {
   const navigate = useNavigate();
   const { mode, setMode, annotations2d, boxes3d } = useAnnotationStore();
@@ -99,6 +102,15 @@ export default function AnnotationTopBar({
 
       {/* spacer */}
       <div className="flex-1" />
+
+      {saveHint && (
+        <>
+          <span className="text-[10px] text-emerald-400/80 max-w-40 truncate" title={saveHint}>
+            {saveHint}
+          </span>
+          <div className="w-px h-5 bg-[#1e1e2e]" />
+        </>
+      )}
 
       {/* image navigation */}
       <div className="flex items-center gap-2">
